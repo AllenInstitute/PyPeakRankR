@@ -30,7 +30,7 @@ Features collected:
 - Gene marker score
 
 The framework is designed to be easily extended with additional peak-level features.
-- 
+ 
 ## Author
 Saroja Somasundaram
 
