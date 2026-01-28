@@ -1,6 +1,5 @@
 # PyPeakRanker
 
-Brief description of what this repository contains.
 PyPeakRankR is a Python package for collecting quantitative features for a predefined set of ATAC-seq peaks and assembling them into a reproducible, analysis-ready table.
 The resulting peak × feature matrix enables systematic ranking and comparison of regulatory elements across cell types, conditions, or species.
 
