@@ -1,3 +1,16 @@
+Metadata-Version: 2.4
+Name: pypeakranker
+Version: 0.1.0
+Summary: Feature extraction over genomic peaks
+Author: Saroja Somasundaram
+License: MIT
+Requires-Python: >=3.10
+Description-Content-Type: text/markdown
+Requires-Dist: numpy
+Requires-Dist: pandas
+Requires-Dist: pybigwig
+Requires-Dist: pyfaidx
+
 # PyPeakRanker
 
 **PyPeakRanker** is a Python package for extracting quantitative features from a predefined set of ATAC-seq peaks and assembling them into a reproducible, analysis-ready table.  

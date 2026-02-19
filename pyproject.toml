@@ -1,0 +1,30 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pypeakranker"
+version = "0.1.0"
+description = "Feature extraction over genomic peaks"
+readme = "README.md"
+requires-python = ">=3.10"
+license = {text = "MIT"}
+authors = [
+  {name = "Saroja Somasundaram"}
+]
+
+dependencies = [
+  "numpy",
+  "pandas",
+  "pybigwig",
+  "pyfaidx"
+]
+
+[project.scripts]
+pypeakranker = "pypeakranker.cli:main"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
