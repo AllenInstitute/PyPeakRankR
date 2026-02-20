@@ -62,7 +62,7 @@ git clone https://github.com/AllenInstitute/PyPeakRankR
 cd PyPeakRankR
 pip install -e .
 
-pip install pypeakranker
+pip install git+https://github.com/AllenInstitute/PyPeakRankR.git
 
 ```
 
