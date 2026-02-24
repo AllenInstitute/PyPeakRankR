@@ -110,3 +110,7 @@ Saroja Somasundaram
 ## Acknowledgements
 
 Development was assisted by AI-based coding tools.
+
+## License
+
+MIT License. See LICENSE file for details.
