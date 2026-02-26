@@ -1,59 +1,97 @@
 # PyPeakRanker
 
-**PyPeakRanker** is a Python package for extracting quantitative features from a predefined set of ATAC-seq peaks and assembling them into a reproducible, analysis-ready table.  
-The resulting **peak × feature matrix** enables systematic ranking and comparison of regulatory elements across cell types, conditions, or species.
+**PyPeakRanker** is a Python package for extracting quantitative features from a predefined set of genomic peaks and assembling them into a reproducible, analysis-ready table.
 
-PyPeakRanker does **not perform peak calling**. Instead, it standardizes feature extraction so that peak prioritization can be performed reproducibly and transparently using downstream ranking or modeling approaches.
+It generates a standardized **peak × feature matrix**, enabling systematic ranking and comparison of regulatory elements across cell types, conditions, or species.
+
+PyPeakRanker does **not perform peak calling**. Instead, it standardizes feature extraction so that peak prioritization can be performed reproducibly and transparently using downstream statistical or machine-learning approaches.
 
 Given a fixed set of genomic peaks, PyPeakRanker:
 
-- Extracts multiple quantitative features per peak from ATAC-seq data  
-- Aggregates features consistently across cell types or groups  
-- Produces a unified table where rows represent peaks and columns represent features  
-- Enables reproducible ranking of peaks across biological contexts  
+- Extracts quantitative features per peak from signal tracks (e.g., BigWig)
+- Computes sequence-based features from reference genomes
+- Optionally integrates conservation tracks
+- Produces a unified table where rows represent peaks and columns represent features
+- Separates feature generation from downstream ranking logic
 
-This design separates **feature generation** from **ranking logic**, allowing users to apply custom scoring functions, statistical tests, or machine-learning models downstream.
+This design allows users to apply custom scoring functions, statistical tests, or predictive models after feature extraction.
 
 ---
 
 # Statement of Need
 
-ATAC-seq experiments generate large sets of candidate regulatory regions. However, peak prioritization across cell types or conditions is often performed using ad hoc scripts with inconsistent feature definitions and normalization strategies. This limits reproducibility and cross-study comparability.
+ATAC-seq and related assays generate large sets of candidate regulatory regions. However, peak prioritization across cell types or biological conditions is often performed using ad hoc scripts with inconsistent feature definitions and aggregation strategies.
 
-Existing tools primarily focus on:
+Existing tools focus primarily on:
 
 - Peak calling  
 - Differential accessibility testing  
 - Genomic annotation  
 
-But they typically lack a standardized framework for **reproducible peak-level feature extraction**.
+They typically do not provide a standardized framework for **reproducible peak-level feature extraction**.
 
-PyPeakRanker addresses this gap by providing a Python package that:
+PyPeakRanker addresses this gap by:
 
-- Systematically aggregates quantitative features for predefined ATAC-seq peaks  
-- Produces a single, analysis-ready feature table  
-- Enables transparent, reproducible peak ranking and comparative analyses  
-
----
-
-## Features
-
-PyPeakRanker currently supports extraction of the following peak-level features:
-
-- ATAC specificity  
-- Sequence conservation (PhyloP score)  
-- GC content  
-- TSS distance  
-- Peak skewness  
-- Peak kurtosis  
-- Peak bimodality  
-- Gene marker score  
-
-The framework is modular and designed to be easily extended with additional peak-level features.
+- Systematically aggregating quantitative features for predefined peaks
+- Producing a single, analysis-ready feature table
+- Enabling transparent and reproducible peak ranking workflows
 
 ---
 
-## Installation
+# Supported Feature Modules
+
+PyPeakRanker provides modular feature extraction through CLI subcommands.
+
+## `init`
+Initialize a feature table from a peaks file (BED/TSV with chr, start, end).
+
+Creates a clean, deduplicated peak table.
+
+---
+
+## `add-signal`
+Summarize BigWig signal tracks over peaks.
+
+Supported summary statistics:
+- `sum`
+- `mean`
+- `max`
+
+Produces one feature column per BigWig file.
+
+---
+
+## `add-gc`
+Compute GC fraction per peak from a reference genome FASTA.
+
+Adds:
+- `GC_content`
+
+---
+
+## `add-phylop`
+Compute mean PhyloP conservation score per peak from a PhyloP BigWig track.
+
+Optional:
+- LiftOver support via UCSC chain files for cross-assembly scoring
+
+Adds:
+- `phyloP_mean` (customizable column name)
+
+---
+
+## `add-moments`
+Compute higher-order distribution statistics across BigWig signal per peak:
+
+- Skewness
+- Kurtosis
+- Bimodality coefficient
+
+Produces three feature columns per BigWig file.
+
+---
+
+# Installation
 
 Install from source:
 
@@ -61,55 +99,73 @@ Install from source:
 git clone https://github.com/AllenInstitute/PyPeakRankR
 cd PyPeakRankR
 pip install -e .
+```
 
+Or install directly from GitHub:
+
+```
 pip install git+https://github.com/AllenInstitute/PyPeakRankR.git
-
 ```
 
 ## Quick Example
 
-Initialize a feature table from a predefined peak set:
+Initialize a feature table:
 
-```bash
+```
 pypeakranker init \
   --peaks peaks.bed \
   --out features.tsv
-```
 
-Add signal summaries from BigWig files:
-
-```bash
 pypeakranker add-signal \
   --table features.tsv \
-  --bigwig-files sample1.bigWig sample2.bigWig \
+  --bigwig-files sample1.bw sample2.bw \
   --stat sum \
   --suffix summary \
   --out features.tsv
-```
 
-Add GC content from a reference genome:
-
-```bash
 pypeakranker add-gc \
   --table features.tsv \
   --reference-fasta genome.fa \
   --out features.tsv
+
+pypeakranker add-phylop \
+  --table features.tsv \
+  --phylop-bw phyloP.bw \
+  --out features.tsv
+
+For cross-assembly scoring (--chain), UCSC liftOver must be installed and available on PATH (or provide --liftover-exe).
+
+pypeakranker add-moments \
+  --table features.tsv \
+  --bigwig-files sample1.bw sample2.bw \
+  --out features.tsv
+
 ```
 
 The resulting features.tsv will contain:
 
-Original peak coordinates and columns
+Original peak coordinates
 
-- One column per BigWig summary
-- A GC_content column
+One column per signal summary
+
+GC_content
+
+phyloP_mean
+
+Skewness, kurtosis, and bimodality metrics per track
+
+## Design Philosophy
+
+PyPeakRanker explicitly separates:
+
+Feature extraction → deterministic and reproducible
+Peak ranking / modeling → user-defined and flexible
+
+This ensures that ranking logic remains transparent and adaptable to specific biological questions.
 
 ## Author
 
 Saroja Somasundaram
-
-## Acknowledgements
-
-Development was assisted by AI-based coding tools.
 
 ## License
 

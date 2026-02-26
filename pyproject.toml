@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pypeakranker"
-version = "0.1.0"
+dynamic = ["version"]
 description = "Feature extraction over genomic peaks"
 readme = "README.md"
 requires-python = ">=3.9"
@@ -16,8 +16,9 @@ authors = [
 dependencies = [
   "numpy",
   "pandas",
-  "pybigwig",
-  "pyfaidx"
+  "pyBigWig",
+  "pyfaidx",
+  "scipy"
 ]
 
 [project.scripts]
@@ -28,3 +29,12 @@ package-dir = {"" = "src"}
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.setuptools.dynamic]
+version = {attr = "pypeakranker._version.__version__"}
+
+[project.urls]
+Repository = "https://github.com/AllenInstitute/PyPeakRankR"
+
+[project.optional-dependencies]
+test = ["pytest"]

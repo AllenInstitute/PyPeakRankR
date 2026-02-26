@@ -203,21 +203,28 @@ def _list_bigwigs(bigwig_dir: Optional[str], bigwig_files: Optional[List[str]], 
         raise FileNotFoundError("No BigWig files found. Check --bigwig-dir/--bigwig-files and --pattern.")
     return files
 
+# -------------------------
+# Standalone script CLI
+# -------------------------
 
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(
         description="Summarize BigWig signal over peaks (sum/mean/max).",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
-    p.add_argument("--peaks", required=True, help="Peaks BED/TSV (headerless).")
+
+    p.add_argument("--peaks", help="Peaks BED/TSV (headerless).")
+    p.add_argument("--table", help="Existing feature table TSV (must have chr/start/end).")
+
     bw_src = p.add_mutually_exclusive_group(required=True)
     bw_src.add_argument("--bigwig-dir", help="Directory containing BigWig files.")
     bw_src.add_argument("--bigwig-files", nargs="+", help="One or more BigWig file paths.")
+
     p.add_argument("--pattern", default="*.bw,*.bigWig,*.bigwig", help="Glob patterns for --bigwig-dir.")
     p.add_argument("--output", required=True, help="Output TSV path.")
     p.add_argument("--stat", choices=["sum", "mean", "max"], default="sum")
     p.add_argument("--sample-name-mode", choices=["stem", "filename"], default="stem")
-    p.add_argument("--suffix", default=None, help="If set, name columns <sample>_<suffix> instead of <sample>_<stat>.")
+    p.add_argument("--suffix", default="summary", help="Name columns <sample>_<suffix>.")
     p.add_argument("--keep-nans", action="store_true")
     p.add_argument("--allow-missing-chroms", action="store_true")
     p.add_argument("--quiet", action="store_true")
@@ -226,33 +233,48 @@ def build_parser() -> argparse.ArgumentParser:
 
 def main() -> None:
     args = build_parser().parse_args()
-    peaks_df = load_peaks(args.peaks, quiet=args.quiet)
+
+    if (args.peaks is None) == (args.table is None):
+        raise SystemExit("Provide exactly one of --peaks OR --table")
+
     bw_files = _list_bigwigs(args.bigwig_dir, args.bigwig_files, args.pattern)
 
-    results = peaks_df.copy()
-    for bw_path in bw_files:
-        samp = sample_name(bw_path, args.sample_name_mode)
-        out_col = f"{samp}_{args.suffix}" if args.suffix else f"{samp}_{args.stat}"
-        log(f"Processing {samp} -> column {out_col}", args.quiet)
-
-        with pyBigWig.open(bw_path) as bw:
-            results[out_col] = peaks_df.apply(
-                lambda r: summarize_peak(
-                    bw=bw,
-                    chrom=str(r["chr"]),
-                    start=int(r["start"]),
-                    end=int(r["end"]),
-                    stat=args.stat,
-                    keep_nans=args.keep_nans,
-                    allow_missing_chroms=args.allow_missing_chroms,
-                ),
-                axis=1,
+    if args.peaks:
+        # peaks -> init table -> add_signal
+        import tempfile
+        fd, tmp = tempfile.mkstemp(suffix=".tsv")
+        os.close(fd)
+        try:
+            init_table(args.peaks, tmp, quiet=args.quiet)
+            add_signal(
+                table_tsv=tmp,
+                bigwig_files=bw_files,
+                out_tsv=args.output,
+                stat=args.stat,
+                suffix=args.suffix,
+                sample_name_mode=args.sample_name_mode,
+                keep_nans=args.keep_nans,
+                allow_missing_chroms=args.allow_missing_chroms,
+                quiet=args.quiet,
             )
-
-    ensure_parent_dir(args.output)
-    log(f"Writing output: {args.output}", args.quiet)
-    results.to_csv(args.output, sep="\t", index=False)
-    log("Done.", args.quiet)
+        finally:
+            try:
+                os.remove(tmp)
+            except Exception:
+                pass
+    else:
+        # table -> add_signal
+        add_signal(
+            table_tsv=args.table,
+            bigwig_files=bw_files,
+            out_tsv=args.output,
+            stat=args.stat,
+            suffix=args.suffix,
+            sample_name_mode=args.sample_name_mode,
+            keep_nans=args.keep_nans,
+            allow_missing_chroms=args.allow_missing_chroms,
+            quiet=args.quiet,
+        )
 
 
 if __name__ == "__main__":
